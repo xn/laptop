@@ -11,21 +11,21 @@ fancy_echo() {
   printf "\n$fmt\n" "$@"
 }
 
-append_to_zshrc() {
-  local text="$1" zshrc
+append_to_bashrc() {
+  local text="$1" bashrc
   local skip_new_line="${2:-0}"
 
-  if [ -w "$HOME/.zshrc.local" ]; then
-    zshrc="$HOME/.zshrc.local"
+  if [ -w "$HOME/.bashrc.local" ]; then
+    bashrc="$HOME/.bashrc.local"
   else
-    zshrc="$HOME/.zshrc"
+    bashrc="$HOME/.bashrc"
   fi
 
-  if ! grep -Fqs "$text" "$zshrc"; then
+  if ! grep -Fqs "$text" "$bashrc"; then
     if [ "$skip_new_line" -eq 1 ]; then
-      printf "%s\n" "$text" >> "$zshrc"
+      printf "%s\n" "$text" >> "$bashrc"
     else
-      printf "\n%s\n" "$text" >> "$zshrc"
+      printf "\n%s\n" "$text" >> "$bashrc"
     fi
   fi
 }
@@ -39,12 +39,12 @@ if [ ! -d "$HOME/.bin/" ]; then
   mkdir "$HOME/.bin"
 fi
 
-if [ ! -f "$HOME/.zshrc" ]; then
-  touch "$HOME/.zshrc"
+if [ ! -f "$HOME/.bashrc" ]; then
+  touch "$HOME/.bashrc"
 fi
 
 # shellcheck disable=SC2016
-append_to_zshrc 'export PATH="$HOME/.bin:$PATH"'
+append_to_bashrc 'export PATH="$HOME/.bin:$PATH"'
 
 HOMEBREW_PREFIX="/usr/local"
 
@@ -58,20 +58,12 @@ else
   sudo chown -R "$LOGNAME:admin" "$HOMEBREW_PREFIX"
 fi
 
-case "$SHELL" in
-  */zsh) : ;;
-  *)
-    fancy_echo "Changing your shell to zsh ..."
-      chsh -s "$(which zsh)"
-    ;;
-esac
 
 gem_install_or_update() {
   if gem list "$1" --installed > /dev/null; then
     gem update "$@"
   else
     gem install "$@"
-    rbenv rehash
   fi
 }
 
@@ -80,10 +72,10 @@ if ! command -v brew >/dev/null; then
     curl -fsS \
       'https://raw.githubusercontent.com/Homebrew/install/master/install' | ruby
 
-    append_to_zshrc '# recommended by brew doctor'
+    append_to_bashrc '# recommended by brew doctor'
 
     # shellcheck disable=SC2016
-    append_to_zshrc 'export PATH="/usr/local/bin:$PATH"' 1
+    append_to_bashrc 'export PATH="/usr/local/bin:$PATH"' 1
 
     export PATH="/usr/local/bin:$PATH"
 fi
@@ -100,34 +92,24 @@ tap "thoughtbot/formulae"
 tap "homebrew/services"
 
 # Unix
-brew "ctags"
-brew "git"
-brew "openssl"
-brew "rcm"
-brew "reattach-to-user-namespace"
-brew "the_silver_searcher"
-brew "tmux"
-brew "vim"
-brew "zsh"
+brew install ctags
+brew install git
+brew install git-extras
+brew install openssl
+brew install emacs
+brew install bash-git-prompt
+brew cask install java
+brew cask install iterm2
+brew install graphviz
 
-# Heroku
-brew "heroku-toolbelt"
-brew "parity"
-
-# GitHub
-brew "hub"
+brew tap watsonbox/cmu-sphinx
+brew install --HEAD watsonbox/cmu-sphinx/cmu-sphinxbase
+brew install --HEAD watsonbox/cmu-sphinx/cmu-pocketsphinx
 
 # Image manipulation
 brew "imagemagick"
 
-# Testing
-brew "qt"
 
-# Programming languages
-brew "libyaml" # should come after openssl
-brew "node"
-brew "rbenv"
-brew "ruby-build"
 
 # Databases
 brew "postgres", restart_service: true
@@ -135,28 +117,18 @@ brew "redis", restart_service: true
 EOF
 
 fancy_echo "Configuring Ruby ..."
-find_latest_ruby() {
-  rbenv install -l | grep -v - | tail -1 | sed -e 's/^ *//'
-}
+fancy_echo "Installing RVM, to change Ruby versions ..."
+  curl -L https://get.rvm.io | bash -s stable
 
-ruby_version="$(find_latest_ruby)"
-# shellcheck disable=SC2016
-append_to_zshrc 'eval "$(rbenv init - --no-rehash)"' 1
-eval "$(rbenv init -)"
+fancy_echo "Sourcing RVM"
+  source ~/.rvm/scripts/rvm
+  fancy_echo "Installing latest Ruby 2.3.3 ..."
+  rvm install 2.3.3
+  rvm --default use 2.3.3
 
-if ! rbenv versions | grep -Fq "$ruby_version"; then
-  RUBY_CONFIGURE_OPTS=--with-openssl-dir=/usr/local/opt/openssl rbenv install -s "$ruby_version"
-fi
 
-rbenv global "$ruby_version"
-rbenv shell "$ruby_version"
 gem update --system
 gem_install_or_update 'bundler'
 number_of_cores=$(sysctl -n hw.ncpu)
 bundle config --global jobs $((number_of_cores - 1))
 
-if [ -f "$HOME/.laptop.local" ]; then
-  fancy_echo "Running your customizations from ~/.laptop.local ..."
-  # shellcheck disable=SC1090
-  . "$HOME/.laptop.local"
-fi
