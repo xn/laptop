@@ -43,6 +43,9 @@ if [ ! -f "$HOME/.bashrc" ]; then
   touch "$HOME/.bashrc"
 fi
 
+sudo xcodebuild -license
+echo eval "$(xcode-select --install)"
+
 # shellcheck disable=SC2016
 append_to_bashrc 'export PATH="$HOME/.bin:$PATH"'
 
@@ -92,22 +95,20 @@ tap "thoughtbot/formulae"
 tap "homebrew/services"
 
 # Unix
-brew install ctags
-brew install git
-brew install git-extras
-brew install openssl
-brew install emacs
-brew install bash-git-prompt
-brew cask install java
-brew cask install iterm2
-brew install graphviz
+brew "ctags"
+brew "git"
+brew "git-extras"
+brew "openssl"
+brew "emacs"
+brew "bash-git-prompt"
 
-brew tap watsonbox/cmu-sphinx
-brew install --HEAD watsonbox/cmu-sphinx/cmu-sphinxbase
-brew install --HEAD watsonbox/cmu-sphinx/cmu-pocketsphinx
+brew "graphviz"
+brew "htop"
+
+
 
 # Image manipulation
-brew "imagemagick"
+brew "imagemagick@6"
 
 
 
@@ -115,6 +116,11 @@ brew "imagemagick"
 brew "postgres", restart_service: true
 brew "redis", restart_service: true
 EOF
+brew cask install java
+brew cask install iterm2
+echo eval "$(brew tap watsonbox/cmu-sphinx)"
+echo eval "$(brew install --HEAD watsonbox/cmu-sphinx/cmu-sphinxbase)"
+echo eval "$(brew install --HEAD watsonbox/cmu-sphinx/cmu-pocketsphinx)"
 
 fancy_echo "Configuring Ruby ..."
 fancy_echo "Installing RVM, to change Ruby versions ..."
